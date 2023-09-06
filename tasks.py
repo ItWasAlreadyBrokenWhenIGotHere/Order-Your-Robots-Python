@@ -37,6 +37,23 @@ def get_orders():
 
 def fill_the_form(row):
     close_annoying_modal()
+    page = browser.page()
+
+    # 1. Head: Selected from dropdown using dropdown name (head) and input value for selection: 1,2,3,4,5,6
+    page.select_option("//select[@name='head']", str(row["Head"]))
+    # 2. Body: Selected from checkbox using id field with text id-body-# where # is dynamic part from input
+    page.check("#id-body-" + str(row["Body"]))
+    # 3. Legs: Selected from number field using placeholder text as locator and input data as value
+    page.fill("//input[@placeholder='Enter the part number for the legs']", str(row["Legs"]))
+    # 4, Address: Fill is done by field type and name and value is from input data
+    page.fill("//input[@name='address']", str(row["Address"]))
+    # 5. Click Preview button
+    page.click("button:text('Preview')")
+
+    """
+    browser.close()
+    """    
+
 
 def close_annoying_modal():
     page = browser.page()
