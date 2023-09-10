@@ -1,5 +1,5 @@
 from robocorp.tasks import task
-from robocorp import browser, http, excel
+from robocorp import browser, http
 from RPA.Tables import Tables
 from RPA.PDF import PDF
 
@@ -17,7 +17,6 @@ def order_robots_from_RobotSpareBin():
         slowmo=100,
     )
 
-    # order_number = str()
 
     open_robot_order_website()
     orders = get_orders()
@@ -28,6 +27,7 @@ def order_robots_from_RobotSpareBin():
         order_number = submit_the_order()  # Order number is scraped from receipt
         store_receipt_as_pdf(order_number) # Order number is used as file name
         screenshot_robot(order_number) # Order number is also used for screenshot file name
+        embed_screenshot_to_receipt("output/receipts/" + order_number + ".png", "output/receipts/" + order_number + ".pdf")
         order_another_robot()
 
     
@@ -94,9 +94,9 @@ def close_annoying_modal():
 def store_receipt_as_pdf(order_number):
     """ Export receipt to PDF file """
     page = browser.page()
-    sales_results_html = page.locator("#order-completion").inner_html()
+    receipt_html_element = page.locator("#order-completion").inner_html()
     pdf = PDF()
-    pdf.html_to_pdf(sales_results_html, "output/receipts/" + order_number + ".pdf")
+    pdf.html_to_pdf(receipt_html_element, "output/receipts/" + order_number + ".pdf")
 
 
 def screenshot_robot(order_number):
@@ -105,6 +105,16 @@ def screenshot_robot(order_number):
     page.screenshot(path="output/receipts/" + order_number + ".png")
 
 
+def embed_screenshot_to_receipt(screenshot, pdf_file):
+    """ Create one PDF which contains receipt and sceenshot of ordered robot """
+    pdf = PDF()
+    # Convert Screenshot file path to list
+    files = [screenshot]
+    # Append screenshot of robot to PDF receipt
+    pdf.add_files_to_pdf(files, pdf_file, append=True)
+
+
 def order_another_robot():
+    """ Click Order another button to continue to next robot """
     page = browser.page()
     page.click("//*[@id='order-another']")
