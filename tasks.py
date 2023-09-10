@@ -1,6 +1,7 @@
 from robocorp.tasks import task
 from robocorp import browser, http, excel
 from RPA.Tables import Tables
+from RPA.PDF import PDF
 
 
 @task
@@ -16,13 +17,18 @@ def order_robots_from_RobotSpareBin():
         slowmo=100,
     )
 
+    # order_number = str()
+
     open_robot_order_website()
     orders = get_orders()
     for row in orders:
-        print(row)
+        #print(row)
         fill_the_form(row)
         preview_the_order()
-        submit_the_order()
+        order_number = submit_the_order()  # Order number is scraped from receipt
+        store_receipt_as_pdf(order_number) # Order number is used as file name
+        screenshot_robot(order_number) # Order number is also used for screenshot file name
+        order_another_robot()
 
     
 def open_robot_order_website():
@@ -64,6 +70,7 @@ def preview_the_order():
 def submit_the_order():
     """ Submit the order and ensure that order is submitted without any issues """
     page = browser.page()
+    order_number = str()
     # 6. Click Order button
     page.click("button:text('Order')")
     
@@ -71,13 +78,33 @@ def submit_the_order():
     while page.is_visible("//*[@id='order']") == True:
         page.click("//*[@id='order']")
 
-
-    # Finally we can move to next order row
-    while page.is_visible("//*[@id='order-another']") == True:
-        page.click("//*[@id='order-another']")
+    # We need to scrape order number from order confirmation (for the receipt file name)
+    receipt_element = page.query_selector("#receipt > p.badge.badge-success")
+    if receipt_element:
+        order_number = receipt_element.inner_text()
+    return order_number
 
 
 def close_annoying_modal():
     """ Close the annoying modal before entering order info """
     page = browser.page()
     page.click("button:text('OK')")
+
+
+def store_receipt_as_pdf(order_number):
+    """ Export receipt to PDF file """
+    page = browser.page()
+    sales_results_html = page.locator("#order-completion").inner_html()
+    pdf = PDF()
+    pdf.html_to_pdf(sales_results_html, "output/receipts/" + order_number + ".pdf")
+
+
+def screenshot_robot(order_number):
+    """Take a screenshot of the receipts Page"""
+    page = browser.page()
+    page.screenshot(path="output/receipts/" + order_number + ".png")
+
+
+def order_another_robot():
+    page = browser.page()
+    page.click("//*[@id='order-another']")
