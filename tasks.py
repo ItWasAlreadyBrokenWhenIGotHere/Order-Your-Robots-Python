@@ -1,6 +1,7 @@
 from robocorp.tasks import task
 from robocorp import browser, http, excel
 from RPA.Tables import Tables
+from RPA.PDF import PDF
 
 
 @task
@@ -16,13 +17,15 @@ def order_robots_from_RobotSpareBin():
         slowmo=100,
     )
 
+    # order_number = str()
+
     open_robot_order_website()
     orders = get_orders()
     for row in orders:
         print(row)
         fill_the_form(row)
         preview_the_order()
-        submit_the_order()
+        submit_the_order()  # Order number is scraped from receipt
 
     
 def open_robot_order_website():
@@ -64,16 +67,23 @@ def preview_the_order():
 def submit_the_order():
     """ Submit the order and ensure that order is submitted without any issues """
     page = browser.page()
+    order_number = str()
     # 6. Click Order button
     page.click("button:text('Order')")
+    
     
     # Optional: Server error -> Order needs to be re-submitted
     while page.is_visible("//*[@id='order']") == True:
         page.click("//*[@id='order']")
 
-
+    
     # Finally we can move to next order row
     while page.is_visible("//*[@id='order-another']") == True:
+        # We need to scrape order number from order confirmation (for the receipt file name)
+        receipt_element = page.query_selector("#receipt > p.badge.badge-success")
+        if receipt_element:
+            order_number = receipt_element.inner_text()
+        store_receipt_as_pdf(order_number) # Order number is used as file name
         page.click("//*[@id='order-another']")
 
 
@@ -81,3 +91,11 @@ def close_annoying_modal():
     """ Close the annoying modal before entering order info """
     page = browser.page()
     page.click("button:text('OK')")
+
+
+def store_receipt_as_pdf(order_number):
+    """ Export receipt to PDF file """
+    page = browser.page()
+    sales_results_html = page.locator("#order-completion").inner_html()
+    pdf = PDF()
+    pdf.html_to_pdf(sales_results_html, "output/receipts/" + order_number +".pdf")
