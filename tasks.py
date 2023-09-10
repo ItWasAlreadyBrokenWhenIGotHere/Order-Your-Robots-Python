@@ -2,6 +2,7 @@ from robocorp.tasks import task
 from robocorp import browser, http
 from RPA.Tables import Tables
 from RPA.PDF import PDF
+from RPA.Archive import Archive
 
 
 @task
@@ -29,6 +30,7 @@ def order_robots_from_RobotSpareBin():
         screenshot_robot(order_number) # Order number is also used for screenshot file name
         embed_screenshot_to_receipt("output/receipts/" + order_number + ".png", "output/receipts/" + order_number + ".pdf")
         order_another_robot()
+    archive_receipts()
 
     
 def open_robot_order_website():
@@ -118,3 +120,9 @@ def order_another_robot():
     """ Click Order another button to continue to next robot """
     page = browser.page()
     page.click("//*[@id='order-another']")
+
+
+def archive_receipts():
+    """ Add all pdf files from receipts directory to pdf_receipts.zip and save it to output """
+    archive = Archive()
+    archive.archive_folder_with_zip('output/receipts', 'output/pdf_receipts.zip', include='*.pdf')
